@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -21,6 +20,8 @@ model User {
   lastLogin DateTime?
   Course    Course[]
   Trainer   Trainer[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Otp {
@@ -59,6 +60,8 @@ model Trainer {
   courses           Course[]
   user_id           String
   user              User     @relation(fields: [user_id], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
 
   @@map("trainers")
 }

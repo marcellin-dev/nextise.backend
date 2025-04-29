@@ -2,14 +2,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
+import { CoursesModule } from './courses/courses.module';
 import { EventsModule } from './events/events.module';
 import { HttpModule } from './http/http.module';
 import { HttpService } from './http/http.service';
 import { LoggingModule } from './logging/logging.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
-import { CoursesModule } from './courses/courses.module';
 import { TrainerModule } from './trainer/trainer.module';
 
 @Module({
@@ -24,7 +26,13 @@ import { TrainerModule } from './trainer/trainer.module';
     PrismaModule,
     ScheduleModule.forRoot(),
     EventsModule,
-    LoggingModule, SchedulerModule, HttpModule, CoursesModule, TrainerModule],
+    LoggingModule,
+    SchedulerModule,
+    HttpModule,
+    CoursesModule,
+    TrainerModule,
+    AuthModule,
+  ],
   controllers: [],
   providers: [AppService, HttpService],
 })

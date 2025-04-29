@@ -2,9 +2,9 @@
 
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
-import { IsDate, IsIn, IsOptional, IsString, Min } from "class-validator";
+import { IsDate, IsOptional, IsString, Min } from "class-validator";
 
-import { TimeRange } from "../constants";
+
 
 
 export class QueryFilter {
@@ -20,11 +20,7 @@ export class QueryFilter {
   @Min(1)
   limit: number;
 
-  @IsOptional()
-  @ApiProperty({ enum: TimeRange, enumName: 'TimeRange', required: false })
 
-  @IsIn(Object.values(TimeRange))
-  timeRange: string;
 
   @ApiPropertyOptional()
   @IsOptional()

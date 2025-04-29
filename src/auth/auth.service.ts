@@ -25,18 +25,12 @@ export class AuthService {
     const hash = await this.dataHashProvider.hash(password);
     try {
 
-      const user = await this.prisma.$transaction(async (prismaTx) => {
-
-        const user = await prismaTx.user.create({
-          data: {
-            email: email,
-            password: hash,
-          }
-        });
-
-
-        return user;
-      })
+      const user = await this.prisma.user.create({
+        data: {
+          email: email,
+          password: hash,
+        }
+      });
 
       delete user.password;
       const payload = { userId: user.id };
@@ -145,7 +139,6 @@ export class AuthService {
   async refreshToken(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { Profile: true }
     });
 
     if (!user) {

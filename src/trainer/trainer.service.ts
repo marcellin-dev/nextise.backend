@@ -1,26 +1,146 @@
-import { Injectable } from '@nestjs/common';
+/* eslint-disable prettier/prettier */
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { ResolveError } from '../common/errors';
+import { QueryFilter } from '../common/types/common.types';
+import { LoggingService } from '../logging/logging.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateTrainerDto } from './dto/create-trainer.dto';
-import { UpdateTrainerDto } from './dto/update-trainer.dto';
 
 @Injectable()
 export class TrainerService {
-  create(createTrainerDto: CreateTrainerDto) {
-    return 'This action adds a new trainer';
+  constructor(
+    private prisma: PrismaService,
+    private readonly logger: LoggingService,
+  ) {
+    this.logger.setContext({ service: TrainerService.name });
   }
 
-  findAll() {
-    return `This action returns all trainer`;
+  async create(createTrainerDto: CreateTrainerDto, userId: string) {
+    this.logger.log("Création d'un nouveau formateur", {
+      userId,
+      trainerData: createTrainerDto,
+    });
+
+    // Vérifier si l'email est déjà utilisé
+    const existingTrainer = await this.prisma.trainer.findUnique({
+      where: { email: createTrainerDto.email },
+    });
+
+    if (existingTrainer) {
+      this.logger.warn('Email déjà utilisé', { email: createTrainerDto.email });
+      throw new ConflictException(ResolveError('TRAINER_EMAIL_EXISTS'));
+    }
+
+    return this.prisma.trainer.create({
+      data: {
+        ...createTrainerDto,
+        user: { connect: { id: userId } },
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} trainer`;
+  async findAll(userId: string, query: QueryFilter) {
+    const { page = 1, limit = 10, search } = query;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      user_id: userId,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { location: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+    };
+
+    const [trainers, total] = await Promise.all([
+      this.prisma.trainer.findMany({
+        where: where as Prisma.TrainerWhereInput,
+        skip,
+        take: limit,
+        include: {
+          courses: true,
+        },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.trainer.count({ where: where as Prisma.TrainerWhereInput }),
+    ]);
+
+    return {
+      data: trainers,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
-  update(id: number, updateTrainerDto: UpdateTrainerDto) {
-    return `This action updates a #${id} trainer`;
+  async findOne(id: string, userId: string) {
+    const trainer = await this.prisma.trainer.findFirst({
+      where: { id, user_id: userId },
+      include: {
+        courses: true,
+      },
+    });
+
+    if (!trainer) {
+      throw new NotFoundException(ResolveError('TRAINER_NOT_FOUND'));
+    }
+
+    return trainer;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} trainer`;
+  async getTrainerAvailability(trainerId: string, date: string | Date) {
+    //parse date or throw error
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) {
+      throw new BadRequestException(ResolveError('INVALID_DATE'));
+    }
+    const course = await this.prisma.course.findFirst({
+      where: {
+        trainer_id: trainerId,
+        date: parsedDate,
+      },
+    });
+
+    return !course;
+  }
+
+  async assignTrainerToCourse(trainerId: string, courseId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new NotFoundException(ResolveError('COURSE_NOT_FOUND'));
+    }
+
+    const trainer = await this.prisma.trainer.findUnique({
+      where: { id: trainerId },
+    });
+
+    if (!trainer) {
+      throw new NotFoundException(ResolveError('TRAINER_NOT_FOUND'));
+    }
+
+    //check if trainer is available at course date
+    const isAvailable = await this.getTrainerAvailability(trainerId, course.date);
+    if (!isAvailable) {
+      throw new ConflictException(ResolveError('TRAINER_NOT_AVAILABLE'));
+    }
+
+    return this.prisma.course.update({
+      where: { id: courseId },
+      data: { trainer: { connect: { id: trainerId } } },
+    });
   }
 }

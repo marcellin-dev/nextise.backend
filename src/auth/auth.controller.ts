@@ -1,9 +1,9 @@
 /* eslint-disable prettier/prettier */
-import { Body, Controller, HttpCode, HttpStatus, OnModuleInit, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { IsPublic } from 'src/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto, RequestOtpDto, ResetPasswordDto, SignInDto, VerifyEmailDto } from './dto/input-auth.dto';
+import { CreateAuthDto, RequestOtpDto, SignInDto } from './dto/input-auth.dto';
 import { RefreshTokenAuthGuard } from './strategies/refresh-token-auth.guard';
 
 @Controller('auth')
@@ -11,9 +11,6 @@ import { RefreshTokenAuthGuard } from './strategies/refresh-token-auth.guard';
 @IsPublic()
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
-
-
-
 
   @Post('sign-up')
   create(@Body() createAuthDto: CreateAuthDto) {
@@ -32,17 +29,6 @@ export class AuthController {
     return this.authService.requestOtp(requestOtpDto);
   }
 
-  @HttpCode(HttpStatus.OK)
-  @Post('verify-email')
-  verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
-    return this.authService.verifyEmail(verifyEmailDto);
-  }
-
-  @HttpCode(HttpStatus.OK)
-  @Post('reset-password')
-  resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
-    return this.authService.resetPassword(resetPasswordDto);
-  }
 
   @UseGuards(RefreshTokenAuthGuard)
   @Post('refresh')

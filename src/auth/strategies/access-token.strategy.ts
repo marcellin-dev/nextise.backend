@@ -27,11 +27,8 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
       select: {
         id: true,
         email: true,
-        isEmailVerified: true,
-        completionStep: true,
-        kycVerified: true,
-        Profile: true
-
+        createdAt: true,
+        updatedAt: true,
       }
     });
     return user;

@@ -1,34 +1,66 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { TrainerService } from './trainer.service';
-import { CreateTrainerDto } from './dto/create-trainer.dto';
-import { UpdateTrainerDto } from './dto/update-trainer.dto';
+/* eslint-disable prettier/prettier */
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
-@Controller('trainer')
+import { getCurrentUser } from '../common/decorator/getCurrentUser.decorator';
+import { QueryFilter } from '../common/types/common.types';
+import { ICurrentUser } from '../common/types/data.type';
+import { CreateTrainerDto } from './dto/create-trainer.dto';
+import { TrainerService } from './trainer.service';
+
+@Controller('trainers')
+@ApiTags('Trainers')
+@ApiBearerAuth('bearer')
 export class TrainerController {
-  constructor(private readonly trainerService: TrainerService) {}
+  constructor(private readonly trainerService: TrainerService) { }
 
   @Post()
-  create(@Body() createTrainerDto: CreateTrainerDto) {
-    return this.trainerService.create(createTrainerDto);
+  create(
+    @Body() createTrainerDto: CreateTrainerDto,
+    @getCurrentUser() currentUser: ICurrentUser,
+  ) {
+    return this.trainerService.create(createTrainerDto, currentUser.id);
   }
 
   @Get()
-  findAll() {
-    return this.trainerService.findAll();
+  findAll(
+    @Query() query: QueryFilter,
+    @getCurrentUser() currentUser: ICurrentUser,
+  ) {
+    return this.trainerService.findAll(currentUser.id, query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.trainerService.findOne(+id);
+  findOne(
+    @Param('id') id: string,
+    @getCurrentUser() currentUser: ICurrentUser,
+  ) {
+    return this.trainerService.findOne(id, currentUser.id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTrainerDto: UpdateTrainerDto) {
-    return this.trainerService.update(+id, updateTrainerDto);
+  @Get(':id/availability/:date')
+  getTrainerAvailability(
+    @Param('id') id: string,
+    @Param('date') date: string,
+    // @getCurrentUser() currentUser: ICurrentUser,
+  ) {
+    return this.trainerService.getTrainerAvailability(id, date);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.trainerService.remove(+id);
+
+  @Get(':id/courses/:courseId/assign')
+  assignTrainerToCourse(
+    @Param('id') id: string,
+    @Param('courseId') courseId: string,
+    // @getCurrentUser() currentUser: ICurrentUser,
+  ) {
+    return this.trainerService.assignTrainerToCourse(id, courseId);
   }
 }

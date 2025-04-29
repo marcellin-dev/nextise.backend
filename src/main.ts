@@ -8,10 +8,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   const config = new DocumentBuilder()
-    .setTitle('NanoDev Transaction API')
-    .setDescription('The NanoDev Transaction API description')
+    .setTitle('Nextise  API')
+    .setDescription('The Nextise API description')
     .setVersion('1.0')
-    .addTag('NanoDev')
+    .addTag('Nextise')
     .addBearerAuth(
       {
         type: 'http',

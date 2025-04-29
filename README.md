@@ -1,198 +1,243 @@
-# NanoDev Transaction API
+# Documentation du Projet Nextise - Gestion de Séminaires
 
-## Description
+## Introduction
 
-NanoDev Transaction API est une application backend développée avec NestJS qui gère des transactions financières avec un système de confirmation en temps réel utilisant les WebSockets.
+Ce projet est une API de gestion de séminaires développée avec NestJS. Elle permet aux utilisateurs de gérer des cours et des formateurs, avec des fonctionnalités avancées comme la détection de conflits d'emploi du temps et la suggestion automatique de formateurs.
 
-## Technologies
+## Technologies Utilisées
 
 - **Framework**: NestJS v10
-- **Base de données**: PostgreSQL 15
-- **ORM**: Sequelize
-- **Communication en temps réel**: Socket.IO
-- **Documentation API**: Swagger
+- **Base de données**: PostgreSQL
+- **ORM**: Prisma
+- **Authentification**: JWT
+- **Validation**: class-validator
+- **Email**: Nodemailer
 - **Conteneurisation**: Docker
 
-## Prérequis
+## Architecture du Projet
 
-- Node.js (v20)
-- Docker et Docker Compose
-- PostgreSQL 15
-
-## Installation
-
-1. Cloner le repository
-
-git clone <repository-url>
-
-2. Configurer les variables d'environnement
-
-```bash
-cp .env.example .env
+```
+src/
+├── app.module.ts            # Module principal
+├── main.ts                  # Point d'entrée
+├── auth/                    # Authentification et gestion des utilisateurs
+├── courses/                 # Gestion des cours
+├── trainer/                 # Gestion des formateurs
+├── prisma/                  # Configuration Prisma
+├── common/                  # Utilitaires partagés
+│   ├── decorator/           # Décorateurs personnalisés
+│   ├── errors/              # Gestion des erreurs
+│   ├── helpers/             # Fonctions d'aide
+│   └── types/               # Types et interfaces
+├── logging/                 # Service de logging
+└── events/                  # Gestionnaire d'événements
 ```
 
-Remplir les variables suivantes dans le fichier .env :
+## Modèles de Données
 
-```env
+### User
+
+- `id`: Identifiant unique (UUID)
+- `email`: Email unique
+- `password`: Mot de passe hashé
+- `lastLogin`: Date de dernière connexion
+- `createdAt`: Date de création
+- `updatedAt`: Date de mise à jour
+
+### Course
+
+- `id`: Identifiant unique (UUID)
+- `name`: Nom du cours
+- `date`: Date du cours
+- `subject`: Sujet du cours
+- `location`: Lieu du cours
+- `participants`: Nombre de participants
+- `notes`: Notes (optionnel)
+- `price`: Prix du cours
+- `trainer_price`: Prix du formateur
+- `trainer_id`: ID du formateur (optionnel)
+- `user_id`: ID de l'utilisateur créateur
+
+### Trainer
+
+- `id`: Identifiant unique (UUID)
+- `name`: Nom du formateur
+- `training_subjects`: Sujets de formation (tableau)
+- `location`: Lieu du formateur
+- `email`: Email unique du formateur
+- `user_id`: ID de l'utilisateur créateur
+
+## API Endpoints
+
+### Authentification
+
+- `POST /auth/register` : Inscription
+- `POST /auth/login` : Connexion
+- `POST /auth/request-otp` : Demande d'un code OTP
+- `POST /auth/refresh` : Rafraîchir le token
+
+### Cours
+
+- `POST /courses` : Créer un cours
+- `GET /courses` : Lister tous les cours (avec pagination)
+- `GET /courses/:id` : Obtenir les détails d'un cours
+- `POST /courses/suggest-trainer` : Suggérer le meilleur formateur pour un cours
+
+### Formateurs
+
+- `POST /trainers` : Créer un formateur
+- `GET /trainers` : Lister tous les formateurs (avec pagination)
+- `GET /trainers/:id` : Obtenir les détails d'un formateur
+- `GET /trainers/:id/availability/:date` : Vérifier la disponibilité d'un formateur
+
+## Fonctionnalités Principales
+
+### Gestion des Cours
+
+- Création de cours avec validation des données
+- Détection automatique des conflits d'emploi du temps
+- Pagination et recherche avancée
+- Association avec un formateur
+
+### Gestion des Formateurs
+
+- Création de formateurs avec validation des données
+- Vérification de disponibilité
+- Pagination et recherche avancée
+
+### Algorithmes Intelligents
+
+1. **Détection de Conflits d'Emploi du Temps** :
+
+   - Vérifie si deux cours sont programmés en même temps et au même lieu
+   - Empêche la création de cours avec des conflits
+
+2. **Appariement Optimal de Formateur** :
+   - Suggère le meilleur formateur en fonction de :
+     - Son expertise dans le sujet du cours
+     - Sa disponibilité à la date du cours
+     - Sa proximité géographique avec le lieu du cours
+
+### Notification par Email
+
+- Envoi automatique d'email au formateur lors de son assignation à un cours
+- Email avec détails complets du cours (nom, date, lieu, etc.)
+
+## Installation et Configuration
+
+### Prérequis
+
+- Node.js (v16+)
+- PostgreSQL
+- Docker et Docker Compose (optionnel)
+
+### Configuration des Variables d'Environnement
+
+Créez un fichier `.env` avec les variables suivantes :
+
+```
+DATABASE_URL="postgres://<DATABASE_USERNAME>:<DATABASE_PASSWORD>@<DATABASE_HOST>:<DATABASE_PORT>/<DATABASE_NAME>"
+
+# Secrets JWT
+JWT_ACCESS_SECRET="<votre_secret_jwt_access>"
+JWT_REFRESH_SECRET="<votre_secret_jwt_refresh>"
+
+# Configuration SMTP pour l'envoi d'emails
+MAIL_SENDER="<adresse_email_expediteur>"
+MAIL_PASSWORD="<mot_de_passe_email>"
+MAIL_HOST="<hote_smtp>"
+
 DATABASE_HOST=
 DATABASE_PORT=
 DATABASE_USERNAME=
 DATABASE_PASSWORD=
 DATABASE_NAME=
-APP_BASE_URL=
 ```
 
-4. Lancer l'application avec Docker
+### Installation
 
 ```bash
-docker-compose up -d
-```
+# Installer les dépendances
+npm install
 
-## Structure du projet
+# Générer le client Prisma
+npx prisma generate
 
-```
-src/
-├── app.module.ts              # Module principal
-├── main.ts                    # Point d'entrée
-├── transaction/              # Module de gestion des transactions
-├── events/                   # Module WebSocket
-├── database/                 # Configuration base de données
-├── scheduler/                # Tâches planifiées
-├── logging/                 # Service de logging
-└── http/                    # Service HTTP
-```
+# Appliquer les migrations
+npx prisma migrate dev
 
-## Fonctionnalités principales
-
-### 1. Gestion des transactions
-
-- Création de nouvelles transactions
-- Consultation avec filtrage avancé
-- Mise à jour et suppression
-- Confirmation automatique
-
-### 2. Notifications temps réel
-
-- Événement `NEW_TRANSACTION`
-- Événement `TRANSACTION_CONFIRMED`
-
-### 3. Simulation automatique
-
-- Génération de transactions toutes les minutes
-- Confirmation automatique après 10 secondes
-
-## API Endpoints
-
-### Transactions
-
-```
-POST   /transaction          # Créer une transaction
-GET    /transaction          # Lister les transactions
-GET    /transaction/:id      # Obtenir une transaction
-PATCH  /transaction/:id      # Mettre à jour une transaction
-DELETE /transaction/:id      # Supprimer une transaction
-```
-
-### Paramètres de filtrage
-
-| Paramètre | Description       | Valeurs possibles                       |
-| --------- | ----------------- | --------------------------------------- |
-| timeRange | Période           | 24h, 7j, 30j, 1M, 3M, 6M, 12M, YTD, All |
-| page      | Numéro de page    | ≥ 1                                     |
-| limit     | Éléments par page | ≥ 1                                     |
-| search    | Recherche         | string                                  |
-| start     | Date début        | Date                                    |
-| end       | Date fin          | Date                                    |
-
-## WebSocket Events
-
-### Connexion
-
-```javascript
-const socket = io('ws://localhost:8111/events');
-```
-
-### Écoute des événements
-
-```javascript
-socket.on('NEW_TRANSACTION', (data) => {
-  console.log('Nouvelle transaction:', data);
-});
-
-socket.on('TRANSACTION_CONFIRMED', (data) => {
-  console.log('Transaction confirmée:', data);
-});
-```
-
-## Scripts disponibles
-
-```bash
-# Mode développement
+# Lancer l'application en développement
 npm run start:dev
-
-# Construction
-npm run build
-
-# Production
-npm run start:prod
-
-# Tests unitaires
-npm run test
-
-# Tests e2e
-npm run test:e2e
-
-# Couverture de tests
-npm run test:cov
 ```
 
-## Docker
-
-L'application est conteneurisée avec trois services :
-
-### Services
-
-- **server**: Application NestJS (port 8111)
-- **postgres**: Base de données PostgreSQL (port 5432)
-- **adminer**: Interface d'administration BD (port 5096)
-
-### Commandes Docker
+### Docker
 
 ```bash
-# Lancer tous les services
+# Construire et lancer les conteneurs
 docker-compose up -d
-
-# Arrêter les services
-docker-compose down
-
-# Logs
-docker-compose logs -f
 ```
 
-## Tests
+## Utilisation
 
-Le projet inclut des tests unitaires et d'intégration pour :
+### Authentification
 
-- Controllers
-- Services
-- WebSocket Gateway
-- Validations
+Toutes les routes (sauf l'authentification) nécessitent un token JWT valide. Pour l'obtenir :
+
+1. Créez un compte avec `POST /auth/register`
+2. Connectez-vous avec `POST /auth/login`
+3. Utilisez le token d'accès dans l'en-tête Authorization : `Bearer <token>`
+
+### Création d'un Cours
+
+```json
+POST /courses
+{
+  "name": "Advanced React.js",
+  "date": "2024-09-15T10:00:00Z",
+  "subject": "React.js",
+  "location": "Paris",
+  "participants": 20,
+  "notes": "Focus sur les hooks et l'API Context",
+  "price": 2000,
+  "trainer_price": 500,
+  "trainer_id": "uuid-du-formateur" // Optionnel
+}
+```
+
+### Création d'un Formateur
+
+```json
+POST /trainers
+{
+  "name": "Jean Dupont",
+  "training_subjects": ["React.js", "Next.js", "Vue.js"],
+  "location": "Lyon",
+  "email": "jean.dupont@example.com"
+}
+```
+
+### Recherche avec Pagination
+
+```
+GET /courses?page=1&limit=10&search=React
+```
 
 ## Sécurité
 
-- Validation des DTOs
-- Protection CORS
-- Logging sécurisé
-- Filtrage des données
+- **Authentification JWT** : Tous les endpoints sont protégés par JWT
+- **Validation des Données** : Utilisation de class-validator pour valider les entrées
+- **Vérification de Propriété** : Les utilisateurs ne peuvent accéder qu'à leurs propres ressources
+- **Logging Sécurisé** : Service de logging pour tracer les actions importantes
+- **Gestion des Erreurs** : Messages d'erreur internationalisés et sécurisés
 
-## Contribution
+## Bonnes Pratiques Implémentées
 
-1. Fork le projet
-2. Créer une branche (`git checkout -b feature/AmazingFeature`)
-3. Commit les changements (`git commit -m 'Add some AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
+1. **Architecture Modulaire** : Séparation claire des responsabilités
+2. **Injection de Dépendances** : Utilisation du système DI de NestJS
+3. **DTOs Validés** : Validation rigoureuse des données d'entrée
+4. **Pagination** : Gestion efficace des grandes collections de données
+5. **Internationalisation** : Messages d'erreur en français et anglais
+6. **Logging Structuré** : Traces détaillées pour faciliter le débogage
+7. **Transactions Atomiques** : Garantie de l'intégrité des données
 
-## License
-
-[MIT](https://choosealicense.com/licenses/mit/)
+Ce projet respecte les principes SOLID et suit les recommandations de la documentation officielle de NestJS pour une application robuste et évolutive.
