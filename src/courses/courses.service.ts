@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -193,6 +194,51 @@ export class CoursesService {
       if (a.location.includes(course.location)) return -1;
       if (b.location.includes(course.location)) return 1;
       return 0;
+    });
+  }
+
+  async getTrainerAvailability(trainerId: string, date: string | Date) {
+    //parse date or throw error
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) {
+      throw new BadRequestException(ResolveError('INVALID_DATE'));
+    }
+    const course = await this.prisma.course.findFirst({
+      where: {
+        trainer_id: trainerId,
+        date: parsedDate,
+      },
+    });
+
+    return !course;
+  }
+
+  async assignTrainerToCourse(trainerId: string, courseId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new NotFoundException(ResolveError('COURSE_NOT_FOUND'));
+    }
+
+    const trainer = await this.prisma.trainer.findUnique({
+      where: { id: trainerId },
+    });
+
+    if (!trainer) {
+      throw new NotFoundException(ResolveError('TRAINER_NOT_FOUND'));
+    }
+
+    //check if trainer is available at course date
+    const isAvailable = await this.getTrainerAvailability(trainerId, course.date);
+    if (!isAvailable) {
+      throw new ConflictException(ResolveError('TRAINER_NOT_AVAILABLE'));
+    }
+
+    return this.prisma.course.update({
+      where: { id: courseId },
+      data: { trainer: { connect: { id: trainerId } } },
     });
   }
 }

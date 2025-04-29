@@ -115,32 +115,5 @@ export class TrainerService {
     return !course;
   }
 
-  async assignTrainerToCourse(trainerId: string, courseId: string) {
-    const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
-    });
 
-    if (!course) {
-      throw new NotFoundException(ResolveError('COURSE_NOT_FOUND'));
-    }
-
-    const trainer = await this.prisma.trainer.findUnique({
-      where: { id: trainerId },
-    });
-
-    if (!trainer) {
-      throw new NotFoundException(ResolveError('TRAINER_NOT_FOUND'));
-    }
-
-    //check if trainer is available at course date
-    const isAvailable = await this.getTrainerAvailability(trainerId, course.date);
-    if (!isAvailable) {
-      throw new ConflictException(ResolveError('TRAINER_NOT_AVAILABLE'));
-    }
-
-    return this.prisma.course.update({
-      where: { id: courseId },
-      data: { trainer: { connect: { id: trainerId } } },
-    });
-  }
 }

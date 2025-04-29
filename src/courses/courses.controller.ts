@@ -54,4 +54,14 @@ export class CoursesController {
   ) {
     return this.coursesService.suggestBestTrainer(course);
   }
+
+
+  @Get(':courseId/trainer/:trainerId/assign')
+  assignTrainerToCourse(
+    @Param('courseId') courseId: string,
+    @Param('trainerId') trainerId: string,
+    // @getCurrentUser() currentUser: ICurrentUser,
+  ) {
+    return this.coursesService.assignTrainerToCourse(trainerId, courseId);
+  }
 }

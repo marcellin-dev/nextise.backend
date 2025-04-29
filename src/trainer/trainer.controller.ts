@@ -55,12 +55,4 @@ export class TrainerController {
   }
 
 
-  @Get(':id/courses/:courseId/assign')
-  assignTrainerToCourse(
-    @Param('id') id: string,
-    @Param('courseId') courseId: string,
-    // @getCurrentUser() currentUser: ICurrentUser,
-  ) {
-    return this.trainerService.assignTrainerToCourse(id, courseId);
-  }
 }
