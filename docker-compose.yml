@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5555/${POSTGRES_DB}
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5555/${POSTGRES_DB}
     restart: always
     env_file:
       - .env
