@@ -38,11 +38,11 @@ export class AuthService {
       return {
         user: user,
         access_token: await this.jwtService.signAsync(payload, {
-          expiresIn: '1d',
+          expiresIn: '7d',
           secret: process.env.JWT_ACCESS_SECRET,
         }),
         refresh_token: await this.jwtService.signAsync(payload, {
-          expiresIn: '7d',
+          expiresIn: '30d',
           secret: process.env.JWT_REFRESH_SECRET,
         }),
       };
@@ -79,11 +79,11 @@ export class AuthService {
     const data = {
       user: result,
       access_token: await this.jwtService.signAsync(payload, {
-        expiresIn: '1d',
+        expiresIn: '7d',
         secret: process.env.JWT_ACCESS_SECRET,
       }),
       refresh_token: await this.jwtService.signAsync(payload, {
-        expiresIn: '7d',
+        expiresIn: '30d',
         secret: process.env.JWT_REFRESH_SECRET,
       }),
     };
@@ -149,11 +149,11 @@ export class AuthService {
 
     const data = {
       access_token: await this.jwtService.signAsync(payload, {
-        expiresIn: '1d',
+        expiresIn: '7d',
         secret: process.env.JWT_ACCESS_SECRET,
       }),
       refresh_token: await this.jwtService.signAsync(payload, {
-        expiresIn: '14d',
+        expiresIn: '30d',
         secret: process.env.JWT_REFRESH_SECRET,
       }),
     };
