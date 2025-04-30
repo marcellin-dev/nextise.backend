@@ -16,6 +16,7 @@ services:
       - nextise-app
     depends_on:
       - postgres
+    command: sh -c "npx prisma db push"
 
   postgres:
     image: postgres:15-alpine
